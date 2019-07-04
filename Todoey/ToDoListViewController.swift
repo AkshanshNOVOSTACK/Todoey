@@ -10,7 +10,8 @@ import UIKit
 
 class ToDoListViewController: UITableViewController {
     
-    let itemArray = ["Shopping", "Tasks", "Challenges"]
+    var itemArray = ["Shopping", "Tasks", "Challenges"]
+    
     
     
     override func viewDidLoad() {
@@ -40,6 +41,30 @@ class ToDoListViewController: UITableViewController {
         }
         
          tableView.deselectRow(at: indexPath, animated: true)
+    }
+    
+    //MARK - Add new Items IBAction
+    
+    @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
+        var textField = UITextField()
+        
+        let alert = UIAlertController(title: "Add New Todoey Item", message: "", preferredStyle: .alert)
+        let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
+            print("Success!"+textField.text!)
+            self.itemArray.append(textField.text!)
+            self.tableView.reloadData()
+        }
+//        let action2 = UIAlertAction(title: "Cancel", style: .default) { (action2) in
+//            print("Cancel")
+//        }
+        alert.addTextField { (alertTextField) in
+            alertTextField.placeholder = "Create new Item"
+             textField = alertTextField
+        }
+        alert.addAction(action)
+        //alert.addAction(action2)
+        present(alert, animated: true, completion: nil)
+        
     }
     
 }
