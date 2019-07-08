@@ -7,38 +7,36 @@
 //
 
 import UIKit
-import CoreData
+import RealmSwift
 
 
 class ToDoListViewController: UITableViewController {
     
-    var itemArray = [Item]()
-    // let dataFilePath = FileManager.default.urls(for: .documentDirectory , in: .userDomainMask).first?.appendingPathComponent("Items.plist")
-    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+    var itemArray: Results<Item>?
     var selectedCategory : Category?{
         didSet{
             loadItems()
         }
     }
+    let realm = try! Realm()
+    
+    
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        
-      //  loadItems()
         
     }
     
     //Data Source methods
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return itemArray.count
+        return itemArray?.count ?? 1
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoitemCell", for: indexPath)
-        cell.textLabel?.text = itemArray[indexPath.row].title
+        cell.textLabel?.text = itemArray?[indexPath.row].title
         
-        itemArray[indexPath.row].done ? (cell.accessoryType = .checkmark) : (cell.accessoryType = .none)
+        itemArray?[indexPath.row].done ?? false ? (cell.accessoryType = .checkmark) : (cell.accessoryType = .none)
         return cell
     }
     
@@ -48,10 +46,20 @@ class ToDoListViewController: UITableViewController {
     //Table View Delegate Method for dececting Row Selected  
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
-        itemArray[indexPath.row].done = !itemArray[indexPath.row].done
-        saveData()
-        tableView.deselectRow(at: indexPath, animated: true)
+        if let item = itemArray?[indexPath.row]{
+            do{
+                try realm.write {
+                    // realm.delete(item)// Delete Item from database
+                    item.done = !item.done
+                }
+            }catch{
+                print("Error UIpdateing \(error)")
+            }
+            
+        }
         tableView.reloadData()
+        tableView.deselectRow(at: indexPath, animated: true)
+        
     }
     
     
@@ -67,14 +75,20 @@ class ToDoListViewController: UITableViewController {
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
             print("Success!"+textField.text!)
             
-            let itemO = Item(context: self.context)
-            itemO.title = textField.text!
-            itemO.done = false
-            itemO.parentCategory = self.selectedCategory
+            if let currentCategory = self.selectedCategory{
+                do{
+                    try self.realm.write{
+                        let itemO = Item()
+                        itemO.title = textField.text!
+                        itemO.done = false
+                        itemO.date = Date()
+                        currentCategory.items.append(itemO)
+                    }
+                }catch{
+                    print("Error saving\(error)")
+                }
+            }
             
-            self.itemArray.append(itemO)
-            
-            self.saveData()
             
             self.tableView.reloadData()
         }
@@ -88,61 +102,37 @@ class ToDoListViewController: UITableViewController {
         
     }
     
-    func saveData(){
-        
-        do{
-            try context.save()
-        }catch{
-            print("Error Encoding,\(error)")
-        }
-    }
+    
     
     func loadItems()
     {
-        let request : NSFetchRequest<Item> = Item.fetchRequest()
-        let predicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)
-        request.predicate = predicate
-        do{
-            itemArray = try context.fetch(request)
-        }catch{
-            print("Error fetching,\(error)")
-        }
+        itemArray = selectedCategory?.items.sorted(byKeyPath: "title", ascending: true)
+        tableView.reloadData()
     }
     
     
     
     
-    }
+}
 
 //MARK - Searchbar Delegate methods
 extension ToDoListViewController: UISearchBarDelegate{
     
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-        let request : NSFetchRequest<Item> = Item.fetchRequest()
-        
-        let predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
-        request.predicate = predicate
-        let sortDescriptor = NSSortDescriptor(key: "title", ascending: true)
-        request.sortDescriptors = [sortDescriptor]
-        
-        do{
-            itemArray = try context.fetch(request)
-        }catch{
-            print("Error fetching data from conext \(error)")
-        }
-        tableView.reloadData()
-        
-    }
     
-   
+        itemArray = itemArray?.filter("title CONTAINS[cd] %@",  searchBar.text!).sorted(byKeyPath: "date", ascending: true)
+        tableView.reloadData()
+        }
+    
+    
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
         if searchBar.text?.count == 0{
-           loadItems()
+            loadItems()
             tableView.reloadData()
             DispatchQueue.main.async {
                 searchBar.resignFirstResponder()
             }
-            }
+        }
     }
     
 }
