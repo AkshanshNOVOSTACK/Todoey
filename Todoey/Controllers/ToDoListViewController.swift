@@ -7,34 +7,25 @@
 //
 
 import UIKit
+import CoreData
+
 
 class ToDoListViewController: UITableViewController {
     
     var itemArray = [Item]()
-    let dataFilePath = FileManager.default.urls(for: .documentDirectory , in: .userDomainMask).first?.appendingPathComponent("Items.plist")
-    
+    // let dataFilePath = FileManager.default.urls(for: .documentDirectory , in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+    var selectedCategory : Category?{
+        didSet{
+            loadItems()
+        }
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view.
         
-        let newItem = Item()
-        newItem.title = "Find Mike"
-        itemArray.append(newItem)
         
-        let newItem2 = Item()
-        newItem2.title = "Find Josh"
-        itemArray.append(newItem2)
-        
-        let newItem3 = Item()
-        newItem3.title = "Find Ross"
-        itemArray.append(newItem3)
-        
-        //        if let users = userDefaults.array(forKey: "ToDoListArray") as? [Item]{
-        //            itemArray = users
-        //        }
-        
-        loadItems()
+      //  loadItems()
         
     }
     
@@ -47,31 +38,25 @@ class ToDoListViewController: UITableViewController {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoitemCell", for: indexPath)
         cell.textLabel?.text = itemArray[indexPath.row].title
         
-        //        if itemArray[indexPath.row].done == true{
-        //            cell.accessoryType = .checkmark
-        //        }
-        //        else{
-        //            cell.accessoryType = .none
-        //        }
-        
         itemArray[indexPath.row].done ? (cell.accessoryType = .checkmark) : (cell.accessoryType = .none)
         return cell
     }
     
+    
+    
+    
     //Table View Delegate Method for dececting Row Selected  
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        // print(itemArray[indexPath.row])
         
-        //        if itemArray[indexPath.row].done == false{
-        //            itemArray[indexPath.row].done = true
-        //        }else{
-        //            itemArray[indexPath.row].done = false
-        //        }
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
         saveData()
         tableView.deselectRow(at: indexPath, animated: true)
         tableView.reloadData()
     }
+    
+    
+    
+    
     
     //MARK - Add new Items IBAction
     
@@ -82,29 +67,31 @@ class ToDoListViewController: UITableViewController {
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
             print("Success!"+textField.text!)
             
-            let itemO = Item()
+            let itemO = Item(context: self.context)
             itemO.title = textField.text!
+            itemO.done = false
+            itemO.parentCategory = self.selectedCategory
+            
             self.itemArray.append(itemO)
+            
             self.saveData()
+            
             self.tableView.reloadData()
         }
-        //        let action2 = UIAlertAction(title: "Cancel", style: .default) { (action2) in
-        //            print("Cancel")
-        //        }
+        
         alert.addTextField { (alertTextField) in
             alertTextField.placeholder = "Create new Item"
             textField = alertTextField
         }
         alert.addAction(action)
-        //alert.addAction(action2)
         present(alert, animated: true, completion: nil)
         
     }
+    
     func saveData(){
-        let encoder = PropertyListEncoder()
+        
         do{
-            let data = try encoder.encode(itemArray)
-            try data.write(to: dataFilePath!)
+            try context.save()
         }catch{
             print("Error Encoding,\(error)")
         }
@@ -112,16 +99,50 @@ class ToDoListViewController: UITableViewController {
     
     func loadItems()
     {
-        if let data = try? Data(contentsOf: dataFilePath!)
-        {
-            let decoder = PropertyListDecoder()
-            do{
-                itemArray = try decoder.decode([Item].self, from: data)
-            }catch{
-                print("Error Decoding items Array,\(error)")
-            }
+        let request : NSFetchRequest<Item> = Item.fetchRequest()
+        let predicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)
+        request.predicate = predicate
+        do{
+            itemArray = try context.fetch(request)
+        }catch{
+            print("Error fetching,\(error)")
         }
     }
     
-}
+    
+    
+    
+    }
 
+//MARK - Searchbar Delegate methods
+extension ToDoListViewController: UISearchBarDelegate{
+    
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        let request : NSFetchRequest<Item> = Item.fetchRequest()
+        
+        let predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+        request.predicate = predicate
+        let sortDescriptor = NSSortDescriptor(key: "title", ascending: true)
+        request.sortDescriptors = [sortDescriptor]
+        
+        do{
+            itemArray = try context.fetch(request)
+        }catch{
+            print("Error fetching data from conext \(error)")
+        }
+        tableView.reloadData()
+        
+    }
+    
+   
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if searchBar.text?.count == 0{
+           loadItems()
+            tableView.reloadData()
+            DispatchQueue.main.async {
+                searchBar.resignFirstResponder()
+            }
+            }
+    }
+    
+}
