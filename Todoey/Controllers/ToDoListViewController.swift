@@ -10,7 +10,7 @@ import UIKit
 import RealmSwift
 
 
-class ToDoListViewController: UITableViewController {
+class ToDoListViewController: SwipTableViewController {
     
     var itemArray: Results<Item>?
     var selectedCategory : Category?{
@@ -33,7 +33,8 @@ class ToDoListViewController: UITableViewController {
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoitemCell", for: indexPath)
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
+        
         cell.textLabel?.text = itemArray?[indexPath.row].title
         
         itemArray?[indexPath.row].done ?? false ? (cell.accessoryType = .checkmark) : (cell.accessoryType = .none)
@@ -63,7 +64,7 @@ class ToDoListViewController: UITableViewController {
     }
     
     
-    
+    /////hjvjkkx
     
     
     //MARK - Add new Items IBAction
@@ -110,6 +111,17 @@ class ToDoListViewController: UITableViewController {
         tableView.reloadData()
     }
     
+    override func updateModel(at indexPath: IndexPath) {
+        if let categoryForDeletion = self.itemArray?[indexPath.row]{
+            do{
+                try self.realm.write {
+                    self.realm.delete(categoryForDeletion)
+                }
+            }catch{
+                print("Error Deleting \(error)")
+            }
+        }
+    }
     
     
     
@@ -120,7 +132,7 @@ extension ToDoListViewController: UISearchBarDelegate{
     
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
     
-        itemArray = itemArray?.filter("title CONTAINS[cd] %@",  searchBar.text!).sorted(byKeyPath: "date", ascending: true)
+        itemArray = itemArray?.filter("title CONTAINS[cd] %@",  searchBar.text!).sorted(byKeyPath: "date ", ascending: true)
         tableView.reloadData()
         }
     
