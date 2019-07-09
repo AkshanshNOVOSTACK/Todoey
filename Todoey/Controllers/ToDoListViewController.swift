@@ -21,11 +21,27 @@ class ToDoListViewController: SwipTableViewController {
     }
     let realm = try! Realm()
     
+    @IBOutlet weak var searchBar: UISearchBar!
     
     
     override func viewDidLoad() {
         super.viewDidLoad()
-         tableView.separatorStyle = .none
+        tableView.separatorStyle = .none
+ 
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        if let colorHex = selectedCategory?.color{
+            title = selectedCategory!.name
+            
+            guard let navBar = navigationController?.navigationBar else{
+                fatalError("Navigation Controller does not exist.")
+            }
+            navigationController?.navigationBar.barTintColor = UIColor(hexString: colorHex)
+            navigationController?.navigationBar.tintColor = ContrastColorOf(UIColor(hexString: colorHex)!, returnFlat: true)
+             searchBar.barTintColor = UIColor(hexString: colorHex)
+        }
+       
     }
     
     //Data Source methods
@@ -137,10 +153,10 @@ class ToDoListViewController: SwipTableViewController {
 extension ToDoListViewController: UISearchBarDelegate{
     
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-    
+        
         itemArray = itemArray?.filter("title CONTAINS[cd] %@",  searchBar.text!).sorted(byKeyPath: "date ", ascending: true)
         tableView.reloadData()
-        }
+    }
     
     
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
