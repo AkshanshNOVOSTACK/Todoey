@@ -8,6 +8,7 @@
 
 import UIKit
 import RealmSwift
+import ChameleonFramework
 
 
 class ToDoListViewController: SwipTableViewController {
@@ -24,7 +25,7 @@ class ToDoListViewController: SwipTableViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+         tableView.separatorStyle = .none
     }
     
     //Data Source methods
@@ -36,6 +37,11 @@ class ToDoListViewController: SwipTableViewController {
         let cell = super.tableView(tableView, cellForRowAt: indexPath)
         
         cell.textLabel?.text = itemArray?[indexPath.row].title
+        
+        if let color = UIColor(hexString: selectedCategory!.color)?.darken(byPercentage: CGFloat(indexPath.row)/CGFloat(itemArray!.count)){
+            cell.backgroundColor = color
+            cell.textLabel?.textColor = ContrastColorOf(color, returnFlat: true)
+        }
         
         itemArray?[indexPath.row].done ?? false ? (cell.accessoryType = .checkmark) : (cell.accessoryType = .none)
         return cell

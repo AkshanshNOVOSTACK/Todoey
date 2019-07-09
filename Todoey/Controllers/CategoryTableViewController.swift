@@ -35,7 +35,9 @@ class CategoryTableViewController: SwipTableViewController {
         
         let cell = super.tableView(tableView, cellForRowAt: indexPath)
         cell.textLabel?.text = itemArray?[indexPath.row].name ?? "NO Categories added yet"
-        cell.backgroundColor = UIColor(hexString: itemArray?[indexPath.row].color ?? "#fff")
+        let backGroundColor = UIColor(hexString: itemArray?[indexPath.row].color ?? "#fff")
+     cell.backgroundColor = backGroundColor
+        cell.textLabel?.textColor = ContrastColorOf(backGroundColor!, returnFlat: true)
        // cell.backgroundColor = UIColor.randomFlat
         
         return cell
