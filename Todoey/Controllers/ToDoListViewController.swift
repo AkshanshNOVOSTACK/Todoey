@@ -27,8 +27,9 @@ class ToDoListViewController: SwipTableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         tableView.separatorStyle = .none
- 
+        
     }
+    
     
     override func viewWillAppear(_ animated: Bool) {
         if let colorHex = selectedCategory?.color{
@@ -37,12 +38,13 @@ class ToDoListViewController: SwipTableViewController {
             guard let navBar = navigationController?.navigationBar else{
                 fatalError("Navigation Controller does not exist.")
             }
-            navigationController?.navigationBar.barTintColor = UIColor(hexString: colorHex)
-            navigationController?.navigationBar.tintColor = ContrastColorOf(UIColor(hexString: colorHex)!, returnFlat: true)
-             searchBar.barTintColor = UIColor(hexString: colorHex)
+            navBar.barTintColor = UIColor(hexString: colorHex)
+            navBar.tintColor = ContrastColorOf(UIColor(hexString: colorHex)!, returnFlat: true)
+            searchBar.barTintColor = UIColor(hexString: colorHex)
         }
-       
+        
     }
+    
     
     //Data Source methods
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -106,7 +108,7 @@ class ToDoListViewController: SwipTableViewController {
                         itemO.done = false
                         itemO.date = Date()
                         currentCategory.items.append(itemO)
-                    }
+            }
                 }catch{
                     print("Error saving\(error)")
                 }
@@ -145,8 +147,17 @@ class ToDoListViewController: SwipTableViewController {
         }
     }
     
+
+func saveData(itemObject: Item){
     
-    
+    do{
+        try realm.write {
+            realm.add(itemObject)
+        }
+    }catch{
+        print("Error Encoding,\(error)")
+    }
+}
 }
 
 //MARK - Searchbar Delegate methods
@@ -154,7 +165,7 @@ extension ToDoListViewController: UISearchBarDelegate{
     
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
         
-        itemArray = itemArray?.filter("title CONTAINS[cd] %@",  searchBar.text!).sorted(byKeyPath: "date ", ascending: true)
+        itemArray = itemArray?.filter("title CONTAINS[cd] %@",  searchBar.text!).sorted(byKeyPath: "date", ascending: true)
         tableView.reloadData()
     }
     
